@@ -2,8 +2,9 @@
   "name": "final-di",
   "version": "1.0.2",
   "description": "An awesome dependency injection for typescript.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/cjs/index.js",
+  "types": "dist/esm/index.d.ts",
+  "module": "dist/esm/index.js",
   "scripts": {
     "postinstall": "npm run uptodate",
     "test": "jest --passWithNoTests --detectOpenHandles",
@@ -12,7 +13,7 @@
     "prettify-write": "prettier --config ./.prettierrc --write \"src/**/*{.ts,.js,.json,.css,.scss}\"",
     "lint-check": "tslint -c ./tslint.json 'src/**/*{.ts,.tsx}'",
     "prettify-check": "prettier --config ./.prettierrc --list-different \"src/**/*{.ts,.js,.json,.css,.scss}\"",
-    "build-ts": "tsc",
+    "build-ts": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json",
     "build": "npm run build-ts",
     "uptodate": "npm update && npm update --dev",
     "prepublishOnly": "npm run build"
