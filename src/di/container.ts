@@ -1,13 +1,17 @@
 import 'reflect-metadata';
+import { InjectionToken } from 'src/decorators/utils';
 
 import { Type } from '../decorators';
-import { Dependency } from './dependency';
+
+function isType<T>(toCheck: InjectionToken<T>): toCheck is Type<T> {
+  return !toCheck.hasOwnProperty('useValue')
+}
 
 export class Container {
   private static instance: Container;
 
-  private readonly registry = new Map<Dependency<any>, Type<any>>();
-  private readonly serviceRegistry = new Map<Type<any>, any>();
+  private readonly registry = new Map<string, Type<any>>();
+  private readonly serviceRegistry = new Map<string, any>();
 
   private constructor() {}
 
@@ -18,25 +22,32 @@ export class Container {
     return Container.instance;
   }
 
-  public register<T>(dependency: Dependency<T>, provider: Type<T>): this {
-    this.registry.set(dependency, provider);
+  public register<T>(dependency: InjectionToken<T>, provider: Type<T>): this {
+    this.registry.set(dependency.name, provider);
     return this;
   }
 
-  public getService<T>(dependency: Type<T>, ...input: any[]): T {
-    let provider = this.serviceRegistry.get(dependency) as T;
+  public getService<T>(dependency: InjectionToken<T>, ...input: any[]): T {
+    let provider = this.serviceRegistry.get(dependency.name) as T;
     if (!provider) {
-      const injections = input.map(token => this.resolveInjections(token));
-      provider = new dependency(...injections);
-      this.serviceRegistry.set(dependency, provider);
+      if (isType(dependency)) {
+        const injections = input.map(token => this.resolveInjections(token));
+        provider = new dependency(...injections);
+      } else {
+        provider = dependency.useValue
+      }
+      this.serviceRegistry.set(dependency.name, provider);
     }
     return provider;
   }
 
-  public get<T>(provider: Type<T>, ...input: any[]): T {
-    const tokens = Reflect.getMetadataKeys(provider.prototype, 'property');
-    const injections = tokens.map((token: any) => this.get(token));
-    return new provider(...injections, ...input);
+  public get<T>(provider: InjectionToken<T>, ...input: any[]): T {
+    if (isType(provider)) {
+      const tokens = Reflect.getMetadataKeys(provider.prototype, 'property');
+      const injections = tokens.map((token: any) => this.get(token));
+      return new provider(...injections, ...input);
+    }
+    return provider.useValue
   }
 
   private resolveInjections(token: any): any {

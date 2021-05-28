@@ -5,3 +5,10 @@ export interface Type<T> {
   prototype: any;
   name: string;
 }
+
+export interface InjectionValue<T> {
+  name: string
+  useValue: T
+}
+
+export type InjectionToken<T> = Type<T> | InjectionValue<T>
