@@ -8,7 +8,7 @@ export interface Type<T> {
 
 export interface InjectionValue<T> {
   name: string
-  useValue: T
+  useValue?: T
 }
 
 export type InjectionToken<T> = Type<T> | InjectionValue<T>
