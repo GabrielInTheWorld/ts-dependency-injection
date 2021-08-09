@@ -1,7 +1,7 @@
 import 'reflect-metadata';
-import { InjectionToken } from 'src/decorators/utils';
-import { hasOnInit } from 'src/interfaces/oninit';
 
+import { InjectionToken } from '../decorators/utils';
+import { hasOnInit } from '../interfaces/oninit';
 import { Type } from '../decorators';
 
 function isType<T>(toCheck: InjectionToken<T>): toCheck is Type<T> {
