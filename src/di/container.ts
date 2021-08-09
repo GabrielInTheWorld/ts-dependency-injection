@@ -45,6 +45,9 @@ export class Container {
       } else {
         throw new Error(`No provider for key ${dependency.name}`);
       }
+      if (!isType(dependency) && dependency.afterInit) {
+        dependency.afterInit(provider);
+      }
       this.serviceRegistry.set(dependency.name, provider);
     }
     if (hasOnInit(provider)) {

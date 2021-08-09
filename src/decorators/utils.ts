@@ -7,8 +7,9 @@ export interface Type<T> {
 }
 
 export interface InjectionValue<T> {
-  name: string
-  useValue?: T
+  name: string;
+  useValue?: T;
+  afterInit?: (provider: T) => void;
 }
 
-export type InjectionToken<T> = Type<T> | InjectionValue<T>
+export type InjectionToken<T> = Type<T> | InjectionValue<T>;
