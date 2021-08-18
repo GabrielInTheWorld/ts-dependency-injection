@@ -1,5 +1,3 @@
-// export type ClassKey = string | number | symbol;
-
 export type ClassDecorator<T> = (target: T) => void;
 
 export interface Type<T> {

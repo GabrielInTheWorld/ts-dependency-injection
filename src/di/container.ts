@@ -17,7 +17,6 @@ interface DependencyValue {
 export class Container {
   private static instance: Container;
 
-  private readonly registry = new Map<string, Type<any>>();
   private readonly serviceRegistry = new Map<string, any>();
 
   private readonly rMapService: { [targetName: string]: DependencyValue[] } = {};
@@ -54,44 +53,14 @@ export class Container {
   }
 
   public resolveDependencies<T>(target: Type<T>): any {
-    const callPrototype = (ctorFun: any) => {
-      if (Object.getPrototypeOf(ctorFun)) {
-        console.log('Has prototype:', Object.getPrototypeOf(ctorFun));
-        callPrototype(Object.getPrototypeOf(ctorFun));
-      } else {
-        console.log('Prototype is null:', ctorFun.prototype);
-      }
-    };
-
-    // const SuperConstructor = (ctorFn: any) => {
-    //   Object.getPrototypeOf(ctorFn).call(this);
-    // };
-
     const make = (ctorFn: any, args?: any) => {
-      // callPrototype(ctorFn);
-      // console.log('make', ctorFn, ctorFn.prototype);
-      // const newInstance = Object.create(ctorFn.prototype);
-      // callPrototype(newInstance);
-      // // SuperConstructor(newInstance);
-      // // ctorFn.prototype.call(this);
-      // ctorFn.apply(newInstance, args);
-      // return newInstance;
-
-      // ctorFn.prototype = Object.create(ctorFn.prototype);
-      // ctorFn.prototype.constructor = ctorFn;
       for (const arg of args) {
         ctorFn.prototype[arg.propertyKey] = arg.instance;
       }
       return new ctorFn();
     };
-    // const oldConstructor = target.constructor;
-    // const oldPrototype = target.prototype;
-    // (target as any) = function () {
-    //   console.log('called new constructor');
-    // };
-    // const nextTarget = new target();
-    // const nextTarget = make(target)
     const dependenciesToResolve = [];
+    const functionsToResolve = [];
 
     if (this.rMap[target.name]) {
       for (const dependency of this.rMap[target.name]) {
@@ -100,26 +69,20 @@ export class Container {
         }
         const instance = this.get(dependency.dependency, ...dependency.input);
         dependenciesToResolve.push({ propertyKey: dependency.propertyKey, instance });
-        // Reflect.set(target, dependency.propertyKey, instance);
-        // (nextTarget as any)[dependency.propertyKey] = instance;
       }
       delete this.rMap[target.name];
     }
     if (this.rMapService[target.name]) {
       for (const dependency of this.rMapService[target.name]) {
-        const { provider, executes } = this.resolveDependencyAsService(dependency.dependency, dependency.input);
+        const { provider, fnNames } = this.resolveDependencyAsService(dependency.dependency, dependency.input);
         dependenciesToResolve.push({ propertyKey: dependency.propertyKey, instance: provider });
-        // Reflect.set(target, dependency.propertyKey, provider);
-        // (nextTarget as any)[dependency.propertyKey] = provider;
-        // this.onAfterInit(provider, executes, nextTarget);
+        functionsToResolve.push({ provider, fnNames });
       }
       delete this.rMapService[target.name];
     }
     const nextTarget = make(target, dependenciesToResolve);
-    // const nextTarget = new target();
+    this.resolveAfterInit(functionsToResolve, nextTarget);
     return nextTarget;
-    // return this.resolveDependencyAsService(target).provider;
-    // return target;
   }
 
   public registerService<T>(dependency: string | InjectionToken<T>, provider: Type<T>): void {
@@ -141,13 +104,12 @@ export class Container {
   private resolveDependencyAsService<T>(
     dependency: string | InjectionToken<T>,
     input: any[] = []
-  ): { provider: T; executes: any | any[] } {
+  ): { provider: T; fnNames: string[] } {
     let provider =
       typeof dependency === 'string'
         ? this.serviceRegistry.get(dependency)
         : (this.serviceRegistry.get(dependency.name) as T);
-    console.log('resolveDependencyAsService', dependency);
-    let executes: any | any[];
+    let fnNames: string | string[] = [];
     if (!provider) {
       if (typeof dependency === 'string') {
         throw new Error(`No provider for key ${dependency}`);
@@ -161,14 +123,17 @@ export class Container {
         throw new Error(`No provider for key ${dependency.name}`);
       }
       if (!isType(dependency) && dependency.afterInit) {
-        executes = dependency.afterInit(provider) || [];
+        fnNames = dependency.afterInit(provider) || [];
       }
       this.serviceRegistry.set(dependency.name, provider);
     }
     if (hasOnInit(provider)) {
       provider.onInit();
     }
-    return { provider, executes };
+    if (!Array.isArray(fnNames)) {
+      fnNames = [fnNames];
+    }
+    return { provider, fnNames };
   }
 
   private resolveDependencyAsFactory<T>(provider: InjectionToken<T>, ...input: any[]): T {
@@ -199,7 +164,13 @@ export class Container {
     return token;
   }
 
-  private onAfterInit<T, K>(useValue: T, classKeys: string | string[], target?: any): void {
+  private resolveAfterInit<T>(functionsToResolve: { provider: T; fnNames: string[] }[], target: any): void {
+    for (const entry of functionsToResolve) {
+      this.onAfterInit(entry.provider, entry.fnNames, target);
+    }
+  }
+
+  private onAfterInit<T>(useValue: T, classKeys: string | string[], target?: any): void {
     if (!target) {
       return;
     }

@@ -29,8 +29,6 @@ class TestClass {
 
 test('InjectionValue', () => {
   const test2 = DiContainer.get(TestClass);
-  console.log('test2', test2, test2.helloworld, test2.testInterface);
-  test2.testFn(test2.helloworld);
   expect(test2.helloworld).toBe('world');
   expect(test2.testInterface).toBeTruthy();
 });
