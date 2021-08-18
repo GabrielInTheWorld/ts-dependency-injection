@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "lint-check",
+      "problemMatcher": [],
+      "label": "npm: lint-check",
+      "detail": "tslint -c ./tslint.json 'src/**/*{.ts,.tsx}'"
+    }
+  ]
+}

@@ -11,8 +11,9 @@ import { InjectionToken, Type } from './utils';
  * @returns Nothing. The instantiated class is injected into a target object.
  */
 export function Factory<T>(key: InjectionToken<T>, ...input: any[]): any {
-  return (target: Type<T>, propertyKey: string | symbol, descriptor?: PropertyDescriptor): any => {
-    const service = Container.getInstance().get<T>(key, ...input);
-    Reflect.set(target, propertyKey, service);
+  return (target: Type<T>, propertyKey: string | symbol): void => {
+    // const service = Container.getInstance().get<T>(key, ...input);
+    // Reflect.set(target, propertyKey, service);
+    Container.getInstance().registerDependency(target, { dependency: key, propertyKey, input });
   };
 }
