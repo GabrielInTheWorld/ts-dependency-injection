@@ -20,7 +20,8 @@ export class DiContainer {
       } else if (provider) {
         Container.getInstance().registerService(dependency.name, provider);
       }
+    } else {
+      throw new Error('No suitable dependency and provider are given!');
     }
-    throw new Error('No suitable dependency and provider are given!');
   }
 }

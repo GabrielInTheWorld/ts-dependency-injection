@@ -4,6 +4,9 @@ import { DiContainer } from '../src/di';
 import { TestInterface } from './test-inteface';
 import { TestContructedClass } from './test-constructed-class';
 
+const INJECTION_TOKEN = 'any';
+const INJECTION_VALUE = 'any_value';
+
 @Injectable(TestClass)
 class TestClass {
   @Inject({
@@ -32,4 +35,11 @@ test('InjectionValue', () => {
   expect(test2.helloworld).toBe('world');
   expect(test2.testInterface).toBeTruthy();
   expect(test2.modifiedValue).toBe('modified');
+});
+
+test('Registering value', () => {
+  const injectionToken = { name: INJECTION_TOKEN, useValue: INJECTION_VALUE };
+  DiContainer.register(injectionToken);
+  const test2 = DiContainer.get(INJECTION_TOKEN);
+  expect(test2).toBe(INJECTION_VALUE);
 });
