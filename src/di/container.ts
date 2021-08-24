@@ -1,12 +1,8 @@
 import 'reflect-metadata';
 
-import { InjectionToken } from '../decorators/utils';
+import { InjectionToken, isType } from '../decorators/utils';
 import { hasOnInit } from '../interfaces/oninit';
 import { Type } from '../decorators';
-
-function isType<T>(toCheck: InjectionToken<T>): toCheck is Type<T> {
-  return !toCheck.hasOwnProperty('useValue');
-}
 
 interface DependencyValue {
   dependency: string | InjectionToken<any>;
@@ -85,7 +81,7 @@ export class Container {
     return nextTarget;
   }
 
-  public registerService<T>(dependency: string | InjectionToken<T>, provider: Type<T>): void {
+  public registerService<T>(dependency: string | InjectionToken<T>, provider: Type<T> | T): void {
     if (typeof dependency === 'string') {
       this.serviceRegistry.set(dependency, provider);
     } else {
@@ -179,7 +175,7 @@ export class Container {
     }
     const executeFn = (fn: unknown) => {
       if (typeof fn === 'function') {
-        fn(useValue);
+        fn.call(target, useValue);
       } else {
         throw new Error(`${fn} is not a function`);
       }
