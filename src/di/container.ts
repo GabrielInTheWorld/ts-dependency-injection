@@ -27,12 +27,13 @@ export class Container {
     return Container.instance;
   }
 
-  public static get<T = any>(token: string | InjectionToken<T>): T {
-    const container = Container.getInstance();
-    return container.getService(token);
-  }
+  // public static get<T = any>(token: string | InjectionToken<T>): T {
+  //   const container = Container.getInstance();
+  //   return container.getService(token);
+  // }
 
   public registerDependencyAsService<T>(target: Type<T>, dependencyValue: DependencyValue): void {
+    console.log('registerDependencyAsService', target.constructor.name, dependencyValue);
     if (this.rMapService[target.constructor.name]) {
       this.rMapService[target.constructor.name].push(dependencyValue);
     } else {
@@ -49,8 +50,10 @@ export class Container {
   }
 
   public resolveDependencies<T>(target: Type<T>): any {
+    console.log('resolveDependencies', target.name);
     const make = (ctorFn: any, args?: any) => {
       for (const arg of args) {
+        console.log('args', ctorFn, args);
         ctorFn.prototype[arg.propertyKey] = arg.instance;
       }
       return new ctorFn();
@@ -82,6 +85,10 @@ export class Container {
   }
 
   public registerService<T>(dependency: string | InjectionToken<T>, provider: Type<T> | T): void {
+    console.log('registerService', dependency, provider);
+    if (isType(provider)) {
+      provider = this.resolveDependencyAsService(provider).provider;
+    }
     if (typeof dependency === 'string') {
       this.serviceRegistry.set(dependency, provider);
     } else {
@@ -89,8 +96,8 @@ export class Container {
     }
   }
 
-  public getService<T>(dependency: string | InjectionToken<T>): T {
-    return this.resolveDependencyAsService(dependency).provider;
+  public getService<T>(dependency: string | InjectionToken<T>, input?: any[]): T {
+    return this.resolveDependencyAsService(dependency, input).provider;
   }
 
   public get<T>(provider: InjectionToken<T>, ...input: any[]): T {
@@ -129,6 +136,8 @@ export class Container {
     if (!Array.isArray(fnNames)) {
       fnNames = [fnNames];
     }
+    console.log('resolveDependencyAsService', dependency, provider);
+    console.log('this.rMapService', this.rMapService);
     return { provider, fnNames };
   }
 

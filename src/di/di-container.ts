@@ -2,8 +2,8 @@ import { InjectionToken, Type, isType, isInjectionValue } from '../decorators/ut
 import { Container } from './container';
 
 export class DiContainer {
-  public static get<T>(token: string | InjectionToken<T>): T {
-    return Container.getInstance().getService(token);
+  public static get<T>(token: string | InjectionToken<T>, ...input: any[]): T {
+    return Container.getInstance().getService(token, input);
   }
 
   public static register<T>(dependency: string | InjectionToken<T>, provider?: Type<T> | T): void {
