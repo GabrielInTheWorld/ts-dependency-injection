@@ -1,12 +1,8 @@
 import 'reflect-metadata';
 
-import { InjectionToken } from '../decorators/utils';
+import { InjectionToken, isConstructor, isInjectionValue } from '../decorators/utils';
 import { hasOnInit } from '../interfaces/oninit';
 import { Type } from '../decorators';
-
-function isType<T>(toCheck: InjectionToken<T>): toCheck is Type<T> {
-  return !toCheck.hasOwnProperty('useValue');
-}
 
 export class Container {
   private static instance: Container;
@@ -37,7 +33,7 @@ export class Container {
       if (typeof dependency === 'string') {
         throw new Error(`No provider for key ${dependency}`);
       }
-      if (isType(dependency)) {
+      if (isConstructor(dependency)) {
         const injections = input.map(token => this.resolveInjections(token));
         provider = new dependency(...injections);
       } else if (dependency.useValue) {
@@ -45,7 +41,7 @@ export class Container {
       } else {
         throw new Error(`No provider for key ${dependency.name}`);
       }
-      if (!isType(dependency) && dependency.afterInit) {
+      if (isInjectionValue(dependency) && dependency.afterInit) {
         dependency.afterInit(provider);
       }
       this.serviceRegistry.set(dependency.name, provider);
@@ -57,7 +53,7 @@ export class Container {
   }
 
   public get<T>(provider: InjectionToken<T>, ...input: any[]): T {
-    if (isType(provider)) {
+    if (isConstructor(provider)) {
       const tokens = Reflect.getMetadataKeys(provider.prototype, 'property');
       const injections = tokens.map((token: any) => this.get(token));
       const instance = new provider(...injections, ...input);
