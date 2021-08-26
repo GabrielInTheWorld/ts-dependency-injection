@@ -1,5 +1,3 @@
-// export type ClassDecorator<T> = (target: T) => void;
-
 export interface Constructor<T> {
   new (...args: any[]): T;
   prototype: any;
@@ -14,10 +12,10 @@ export interface InjectionValue<T> {
 
 export type InjectionToken<T> = Constructor<T> | InjectionValue<T>;
 
-export function isConstructor<T>(toCheck: any): toCheck is Constructor<T> {
+export function isConstructable<T>(toCheck: any): toCheck is Constructor<T> {
   return !!toCheck && !!toCheck.prototype;
 }
 
 export function isInjectionValue<T>(toCheck: any): toCheck is InjectionValue<T> {
-  return !isConstructor(toCheck);
+  return !isConstructable(toCheck);
 }

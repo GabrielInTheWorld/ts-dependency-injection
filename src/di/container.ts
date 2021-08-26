@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import { InjectionToken, isConstructor, isInjectionValue } from '../decorators/utils';
+import { InjectionToken, isConstructable, isInjectionValue } from '../decorators/utils';
 import { hasOnInit } from '../interfaces/oninit';
 import { Constructor } from '../decorators';
 
@@ -28,7 +28,7 @@ export class Container {
     const key = typeof dependency === 'string' ? dependency : dependency.name;
     let token = null;
     if (typeof dependency === 'string') {
-      if (isConstructor(provider)) {
+      if (isConstructable(provider)) {
         token = this.resolveDependencies(provider, input);
       } else if (provider) {
         token = provider;
@@ -74,7 +74,7 @@ export class Container {
    * @returns A generic value
    */
   public factory<T>(provider: InjectionToken<T>, ...input: any[]): T {
-    if (isConstructor(provider)) {
+    if (isConstructable(provider)) {
       const tokens = Reflect.getMetadataKeys(provider.prototype, 'property');
       const injections = tokens.map((token: any) => this.factory(token));
       const instance = new provider(...injections, ...input);
@@ -98,7 +98,7 @@ export class Container {
 
   private resolveDependencies<T>(dependency: InjectionToken<T>, input: any[]): T {
     let provider: T;
-    if (isConstructor(dependency)) {
+    if (isConstructable(dependency)) {
       const injections = input.map(token => this.resolveInjections(token));
       provider = new dependency(...injections);
     } else if (dependency.useValue) {
