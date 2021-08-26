@@ -1,18 +1,20 @@
-import { Inject } from '../src/decorators';
+import { Constructor, Container, Factory, Inject, OnInit, NoProviderException } from '../src';
+
 import { TestContructedClass } from './test-constructed-class';
 import { TestInterface } from './test-interface';
-import { APPLICATION_TOKEN, APPLICATION_VALUE } from './test-utils';
-import { Constructor } from '../src/decorators/utils';
+import {
+  APPLICATION_TOKEN,
+  APPLICATION_VALUE,
+  INJECTION_VALUE,
+  INJECTION_TOKEN,
+  INJECTION_PROVIDER
+} from './test-utils';
 import { LateInjecting } from './test-decorator';
-import { Factory } from '../src/decorators/factory';
-import { Container } from '../src/di/container';
+import { throwGetError, throwRegisterError, throwFactoryError } from './test-throw-errors';
 
 afterEach(() => {
-  return Container.getInstance().clear();
+  return Container.clear();
 });
-
-const INJECTION_TOKEN = 'any';
-const INJECTION_VALUE = 'any_value';
 
 class TestClass {
   @Inject({
@@ -74,6 +76,28 @@ class LaterDependency {
   public call(): void {}
 }
 
+class FactoryClass {
+  public static id = 0;
+
+  public constructor() {
+    ++FactoryClass.id;
+  }
+}
+
+class OnInitClass implements OnInit {
+  public capitalA = '';
+
+  public onInit(): void {
+    this.capitalA = 'A';
+  }
+}
+
+class ToInject {}
+
+class CtorInjecting {
+  public constructor(public ctor: ToInject) {}
+}
+
 test('InjectionValue', () => {
   console.log('------------------ InjectionValue ------------------');
   const test = new TestClass();
@@ -83,29 +107,28 @@ test('InjectionValue', () => {
 
 test('After init', () => {
   console.log('------------------ After init ------------------');
-  Container.getInstance().get(Application);
   expect(Application.afterInitValue).toBe(APPLICATION_VALUE);
 });
 
 test('Registering class', () => {
   console.log('------------------ Registering value ------------------');
   const WORLD_TOKEN = 'world';
-  Container.getInstance().register(TestClass, TestClass);
-  const test2 = Container.getInstance().get(TestClass);
+  Container.register(TestClass, TestClass);
+  const test2 = Container.get(TestClass);
   test2.testFn(WORLD_TOKEN);
   expect(test2.modifiedValue).toBe(WORLD_TOKEN);
 });
 
 test('Registering value', () => {
   const injectionToken = { name: INJECTION_TOKEN, useValue: INJECTION_VALUE };
-  Container.getInstance().register(injectionToken);
-  const injectionValue = Container.getInstance().get(injectionToken);
+  Container.register(injectionToken);
+  const injectionValue = Container.get(injectionToken);
   expect(injectionValue).toBe(INJECTION_VALUE);
 });
 
 test('Late dependency', () => {
   console.log('------------------ Late dependency ------------------');
-  const app = Container.getInstance().get(Application, [LaterDependency]);
+  const app = Container.get(Application, [LaterDependency]);
   expect(app.token).toBe(APPLICATION_VALUE);
   expect(app.ctors[0]).toBe(LaterDependency);
   const laterDependency = new app.ctors[0]() as LaterDependency;
@@ -115,8 +138,74 @@ test('Late dependency', () => {
 
 test('Deep dependency', () => {
   console.log('------------------ Deep dependency ------------------');
-  const app3 = Container.getInstance().get(App3);
+  const app3 = Container.get(App3);
   expect(app3.app2).toBeTruthy();
   expect(app3.app2.application).toBeTruthy();
   expect(app3.app2.application.getWorld()).toBe('world');
+});
+
+test('Clear registry', () => {
+  console.log('------------------ Clear registry ------------------');
+  Container.clear();
+  expect(Container.getAllServices().length).toBe(0);
+});
+
+test('NoProviderExceptions', () => {
+  console.log('------------------ NoProviderExceptions ------------------');
+  expect(throwGetError).toThrowError(NoProviderException);
+  expect(throwRegisterError).toThrowError(NoProviderException);
+  expect(throwFactoryError).toThrowError(NoProviderException);
+});
+
+test('Factory', () => {
+  console.log('------------------ Factory ------------------');
+  Container.factory(FactoryClass);
+  Container.factory(FactoryClass);
+  expect(FactoryClass.id).toBe(2);
+});
+
+test('Register provider', () => {
+  console.log('------------------ Register provider ------------------');
+  const PROVIDER_TOKEN = 'provider';
+  Container.register(PROVIDER_TOKEN, TestClass);
+  const testClass = Container.get(PROVIDER_TOKEN);
+  expect(testClass instanceof TestClass).toBeTruthy();
+});
+
+test('Register instance', () => {
+  console.log('------------------ Register instance ------------------');
+  const PROVIDER_TOKEN = 'provider';
+  Container.register(PROVIDER_TOKEN, new TestClass());
+  const testClass = Container.get(PROVIDER_TOKEN);
+  expect(testClass instanceof TestClass).toBeTruthy();
+});
+
+test('Call OnInit service', () => {
+  console.log('------------------ Call OnInit service ------------------');
+  Container.register(OnInitClass);
+  const instance = Container.get(OnInitClass);
+  expect(instance.capitalA).toBe('A');
+});
+
+test('Call OnInit factory', () => {
+  console.log('------------------ Call OnInit factory ------------------');
+  const instance = Container.factory(OnInitClass);
+  expect(instance.capitalA).toBe('A');
+});
+
+test('Factory using useValue', () => {
+  console.log('------------------ Factory using useValue ------------------');
+  const injectionValue = Container.factory(INJECTION_PROVIDER);
+  expect(injectionValue).toBe(INJECTION_VALUE);
+});
+
+test('Resolving injections', () => {
+  console.log('------------------ Resolving injections ------------------');
+  const instance = Container.get(CtorInjecting, ToInject);
+  expect(instance.ctor instanceof ToInject).toBeTruthy();
+});
+
+test('Resolving injections throws errors', () => {
+  console.log('------------------ Factory ------------------');
+  expect(() => Container.get(CtorInjecting, () => ToInject)).not.toThrowError();
 });

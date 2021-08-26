@@ -3,7 +3,7 @@ import { Constructor } from './utils';
 
 export function Injectable(key: any): any {
   return (target: Constructor<any>) => {
-    Container.getInstance().register(key, target);
+    Container.register(key, target);
     return Reflect.defineMetadata('design:paramtypes', key, target);
   };
 }

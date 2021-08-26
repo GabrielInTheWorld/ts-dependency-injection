@@ -3,20 +3,10 @@ import 'reflect-metadata';
 import { InjectionToken, isConstructable, isInjectionValue } from '../decorators/utils';
 import { hasOnInit } from '../interfaces/oninit';
 import { Constructor } from '../decorators';
+import { NoProviderException } from '../errors/no-provider-exception';
 
 export class Container {
-  private static instance: Container;
-
-  private readonly registry = new Map<string, any>();
-
-  private constructor() {}
-
-  public static getInstance(): Container {
-    if (!Container.instance) {
-      Container.instance = new Container();
-    }
-    return Container.instance;
-  }
+  private static readonly registry = new Map<string, any>();
 
   /**
    * Registers a token as service.
@@ -24,7 +14,11 @@ export class Container {
    * @param dependency Required. Must be either a string or a token, that is constructable or usable (has `useValue`).
    * @param provider Optional. Must be provided if dependency is a string or not a constructable or usable item.
    */
-  public register<T>(dependency: string | InjectionToken<T>, provider?: Constructor<T> | T, ...input: any[]): void {
+  public static register<T>(
+    dependency: string | InjectionToken<T>,
+    provider?: Constructor<T> | T,
+    ...input: any[]
+  ): void {
     const key = typeof dependency === 'string' ? dependency : dependency.name;
     let token = null;
     if (typeof dependency === 'string') {
@@ -33,7 +27,7 @@ export class Container {
       } else if (provider) {
         token = provider;
       } else {
-        throw new Error(`No provider for dependency ${dependency} given!`);
+        throw new NoProviderException(dependency);
       }
     } else {
       token = this.resolveDependencies(dependency, input);
@@ -50,12 +44,12 @@ export class Container {
    *
    * @returns The service
    */
-  public get<T>(dependency: string | InjectionToken<T>, ...input: any[]): T {
+  public static get<T>(dependency: string | InjectionToken<T>, ...input: any[]): T {
     let provider =
       typeof dependency === 'string' ? this.registry.get(dependency) : (this.registry.get(dependency.name) as T);
     if (!provider) {
       if (typeof dependency === 'string') {
-        throw new Error(`No provider for key ${dependency}`);
+        throw new NoProviderException(dependency);
       }
       provider = this.resolveDependencies(dependency, input);
       this.registry.set(dependency.name, provider);
@@ -73,7 +67,7 @@ export class Container {
    * @param input Optional input for a new constructed value
    * @returns A generic value
    */
-  public factory<T>(provider: InjectionToken<T>, ...input: any[]): T {
+  public static factory<T>(provider: InjectionToken<T>, ...input: any[]): T {
     if (isConstructable(provider)) {
       const tokens = Reflect.getMetadataKeys(provider.prototype, 'property');
       const injections = tokens.map((token: any) => this.factory(token));
@@ -86,17 +80,21 @@ export class Container {
     if (provider.useValue) {
       return provider.useValue;
     }
-    throw new Error(`No provider for key ${provider.name}`);
+    throw new NoProviderException(provider.name);
   }
 
   /**
    * Clears the whole registry for services
    */
-  public clear(): void {
+  public static clear(): void {
     this.registry.clear();
   }
 
-  private resolveDependencies<T>(dependency: InjectionToken<T>, input: any[]): T {
+  public static getAllServices(): any[] {
+    return Array.from(this.registry.values());
+  }
+
+  private static resolveDependencies<T>(dependency: InjectionToken<T>, input: any[]): T {
     let provider: T;
     if (isConstructable(dependency)) {
       const injections = input.map(token => this.resolveInjections(token));
@@ -104,7 +102,7 @@ export class Container {
     } else if (dependency.useValue) {
       provider = dependency.useValue;
     } else {
-      throw new Error(`No provider for key ${dependency.name}`);
+      throw new NoProviderException(dependency.name);
     }
     if (isInjectionValue(dependency) && dependency.afterInit) {
       dependency.afterInit(provider);
@@ -112,7 +110,7 @@ export class Container {
     return provider;
   }
 
-  private resolveInjections(token: any): any {
+  private static resolveInjections(token: any): any {
     if (typeof token === 'function') {
       try {
         return this.get(token);

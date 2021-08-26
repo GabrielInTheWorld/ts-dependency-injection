@@ -12,7 +12,7 @@ import { InjectionToken, Constructor } from './utils';
  */
 export function Factory<T>(key: InjectionToken<T>, ...input: any[]): any {
   return (target: Constructor<T>, propertyKey: string | symbol, descriptor?: PropertyDescriptor): any => {
-    const service = Container.getInstance().factory<T>(key, ...input);
+    const service = Container.factory<T>(key, ...input);
     Reflect.set(target, propertyKey, service);
   };
 }
