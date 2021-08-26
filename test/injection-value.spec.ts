@@ -1,11 +1,15 @@
 import { Inject } from '../src/decorators';
 import { TestContructedClass } from './test-constructed-class';
 import { TestInterface } from './test-interface';
-import { Container } from '../src/di/container';
 import { APPLICATION_TOKEN, APPLICATION_VALUE } from './test-utils';
 import { Constructor, isConstructor } from '../src/decorators/utils';
 import { LateInjecting } from './test-decorator';
 import { Factory } from '../src/decorators/factory';
+import { Container } from '../src/di/container';
+
+beforeEach(() => {
+  return Container.getInstance().clear();
+});
 
 const INJECTION_TOKEN = 'any';
 const INJECTION_VALUE = 'any_value';
@@ -45,6 +49,20 @@ class Application {
     console.log('Application.ctor', ctors);
     console.log('Application.token', this.token);
   }
+
+  public getWorld(): string {
+    return 'world';
+  }
+}
+
+class App2 {
+  @Inject(Application)
+  public application: Application;
+}
+
+class App3 {
+  @Inject(App2)
+  public app2: App2;
 }
 
 @LateInjecting()
@@ -74,14 +92,14 @@ test('InjectionValue', () => {
 test('Registering value', () => {
   const injectionToken = { name: INJECTION_TOKEN, useValue: INJECTION_VALUE };
   Container.getInstance().register(TestClass, TestClass);
-  const test2 = Container.getInstance().getService(TestClass);
+  const test2 = Container.getInstance().get(TestClass);
   test2.testFn('world');
   expect(test2.modifiedValue).toBe('modified');
 });
 
 test('Late dependency', () => {
   // const app = new Application([LaterDependency]);
-  const app = Container.getInstance().getService(Application, [LaterDependency]);
+  const app = Container.getInstance().get(Application, [LaterDependency]);
   console.log('app', app, app.token, app.ctors[0] === LaterDependency);
   console.log('isType', isConstructor(Application), isConstructor(app));
   expect(app.token).toBe(APPLICATION_VALUE);
@@ -91,4 +109,12 @@ test('Late dependency', () => {
   laterDependency.call();
   const two = laterDependency.dep;
   two.call();
+});
+
+test('Deep dependency', () => {
+  const app3 = Container.getInstance().get(App3);
+  console.log('Deep dependency', app3, app3.app2.application.getWorld());
+  expect(app3.app2).toBeTruthy();
+  expect(app3.app2.application).toBeTruthy();
+  expect(app3.app2.application.getWorld()).toBe('world');
 });

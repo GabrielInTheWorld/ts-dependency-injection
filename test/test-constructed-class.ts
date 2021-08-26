@@ -1,5 +1,5 @@
-import { Injectable } from '../src/decorators';
+// import { Injectable } from '../src/decorators';
 import { TestInterface } from './test-interface';
 
-@Injectable(TestInterface)
+// @Injectable(TestInterface)
 export class TestContructedClass extends TestInterface {}

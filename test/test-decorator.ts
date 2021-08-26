@@ -6,7 +6,7 @@ export function LateInjecting(): any {
   return (target: Constructor<any>): void => {
     let appValue: string;
     try {
-      appValue = Container.getInstance().getService<string>(APPLICATION_TOKEN);
+      appValue = Container.getInstance().get<string>(APPLICATION_TOKEN);
       console.log('had found appValue', appValue);
     } catch (e) {
       console.log('could not find appValue', e);

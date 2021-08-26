@@ -1,4 +1,4 @@
-export type ClassDecorator<T> = (target: T) => void;
+// export type ClassDecorator<T> = (target: T) => void;
 
 export interface Constructor<T> {
   new (...args: any[]): T;
