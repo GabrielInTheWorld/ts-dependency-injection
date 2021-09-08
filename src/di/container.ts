@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 
-import { InjectionToken, isType } from '../decorators/utils';
+import { InjectionToken, isConstructor } from '../decorators/utils';
 import { hasOnInit } from '../interfaces/oninit';
-import { Type } from '../decorators';
+import { Constructor } from '../decorators';
 
 interface DependencyValue {
   dependency: string | InjectionToken<any>;
@@ -32,7 +32,7 @@ export class Container {
   //   return container.getService(token);
   // }
 
-  public registerDependencyAsService<T>(target: Type<T>, dependencyValue: DependencyValue): void {
+  public registerDependencyAsService<T>(target: Constructor<T>, dependencyValue: DependencyValue): void {
     console.log('registerDependencyAsService', target.constructor.name, dependencyValue);
     if (this.rMapService[target.constructor.name]) {
       this.rMapService[target.constructor.name].push(dependencyValue);
@@ -41,7 +41,7 @@ export class Container {
     }
   }
 
-  public registerDependency<T>(target: Type<T>, dependencyValue: DependencyValue): void {
+  public registerDependency<T>(target: Constructor<T>, dependencyValue: DependencyValue): void {
     if (this.rMap[target.constructor.name]) {
       this.rMap[target.constructor.name].push(dependencyValue);
     } else {
@@ -49,7 +49,7 @@ export class Container {
     }
   }
 
-  public resolveDependencies<T>(target: Type<T>): any {
+  public resolveDependencies<T>(target: Constructor<T>): any {
     console.log('resolveDependencies', target.name);
     const make = (ctorFn: any, args?: any) => {
       for (const arg of args) {
@@ -84,9 +84,9 @@ export class Container {
     return nextTarget;
   }
 
-  public registerService<T>(dependency: string | InjectionToken<T>, provider: Type<T> | T): void {
+  public registerService<T>(dependency: string | InjectionToken<T>, provider: Constructor<T> | T): void {
     console.log('registerService', dependency, provider);
-    if (isType(provider)) {
+    if (isConstructor(provider)) {
       provider = this.resolveDependencyAsService(provider).provider;
     }
     if (typeof dependency === 'string') {
@@ -97,7 +97,12 @@ export class Container {
   }
 
   public getService<T>(dependency: string | InjectionToken<T>, input?: any[]): T {
-    return this.resolveDependencyAsService(dependency, input).provider;
+    console.log('Container:getService', dependency, isConstructor(dependency));
+    if (isConstructor(dependency)) {
+      return this.resolveDependencies(dependency);
+    } else {
+      return this.resolveDependencyAsService(dependency, input).provider;
+    }
   }
 
   public get<T>(provider: InjectionToken<T>, ...input: any[]): T {
@@ -117,7 +122,7 @@ export class Container {
       if (typeof dependency === 'string') {
         throw new Error(`No provider for key ${dependency}`);
       }
-      if (isType(dependency)) {
+      if (isConstructor(dependency)) {
         const injections = input.map(token => this.resolveInjections(token));
         provider = new dependency(...injections);
       } else if (dependency.useValue) {
@@ -125,7 +130,7 @@ export class Container {
       } else {
         throw new Error(`No provider for key ${dependency.name}`);
       }
-      if (!isType(dependency) && dependency.afterInit) {
+      if (!isConstructor(dependency) && dependency.afterInit) {
         fnNames = dependency.afterInit(provider) || [];
       }
       this.serviceRegistry.set(dependency.name, provider);
@@ -142,7 +147,7 @@ export class Container {
   }
 
   private resolveDependencyAsFactory<T>(provider: InjectionToken<T>, ...input: any[]): T {
-    if (isType(provider)) {
+    if (isConstructor(provider)) {
       const tokens = Reflect.getMetadataKeys(provider.prototype, 'property');
       const injections = tokens.map((token: any) => this.get(token));
       const instance = new provider(...injections, ...input);
@@ -184,6 +189,8 @@ export class Container {
     }
     const executeFn = (fn: unknown) => {
       if (typeof fn === 'function') {
+        console.log('executeFn', fn, target, useValue);
+        console.log('executeFn:', isConstructor(target), target.constructor.name, target.modifiedValue);
         fn.call(target, useValue);
       } else {
         throw new Error(`${fn} is not a function`);
