@@ -9,8 +9,9 @@ import {
   INJECTION_TOKEN,
   INJECTION_PROVIDER
 } from './test-utils';
-import { LateInjecting } from './test-decorator';
+import { InjectExpress, LateInjecting } from './test-decorator';
 import { throwGetError, throwRegisterError, throwFactoryError } from './test-throw-errors';
+import { EXPRESS_TOKEN, EXPRESS_VALUE } from './test-utils';
 
 afterEach(() => {
   return Container.clear();
@@ -97,6 +98,16 @@ class ToInject {}
 class CtorInjecting {
   public constructor(public ctor: ToInject) {}
 }
+
+class TestInjectionClass {
+  @Inject({ name: EXPRESS_TOKEN, useValue: EXPRESS_VALUE })
+  public express: string;
+
+  public constructor(ctors: Constructor<any>[]) {}
+}
+
+@InjectExpress()
+class TestExpressClass {}
 
 test('InjectionValue', () => {
   console.log('------------------ InjectionValue ------------------');
@@ -208,4 +219,14 @@ test('Resolving injections', () => {
 test('Resolving injections throws errors', () => {
   console.log('------------------ Factory ------------------');
   expect(() => Container.get(CtorInjecting, () => ToInject)).not.toThrowError();
+});
+
+test('Inject express value', () => {
+  const instance = Container.get(TestInjectionClass, [TestExpressClass]);
+  expect(instance.express).toBe(EXPRESS_VALUE);
+});
+
+test('Create express', () => {
+  const instance = new TestInjectionClass([TestExpressClass]);
+  expect(instance.express).toBe(EXPRESS_VALUE);
 });
