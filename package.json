@@ -1,6 +1,6 @@
 {
   "name": "final-di",
-  "version": "1.0.9",
+  "version": "1.0.10-alpha.1",
   "description": "An awesome dependency injection for typescript.",
   "main": "dist/cjs/index.js",
   "types": "dist/esm/index.d.ts",
