@@ -1,5 +1,5 @@
 import { Container } from '../di/container';
-import { InjectionToken, Type } from './utils';
+import { InjectionToken, Constructor } from './utils';
 
 /**
  * A decorator to instantiate a class by the dependency injection. This decorator will instantiate classes
@@ -11,7 +11,7 @@ import { InjectionToken, Type } from './utils';
  * @returns Nothing. The instantiated class is injected into a target object.
  */
 export function Factory<T>(key: InjectionToken<T>, ...input: any[]): any {
-  return (target: Type<T>, propertyKey: string | symbol): void => {
+  return (target: Constructor<T>, propertyKey: string | symbol): void => {
     Container.getInstance().registerDependency(target, { dependency: key, propertyKey, input });
   };
 }
