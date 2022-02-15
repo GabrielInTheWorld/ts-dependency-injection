@@ -2,7 +2,7 @@ import 'reflect-metadata';
 
 import { InjectionToken, isConstructable, isInjectionValue } from '../decorators/utils';
 import { hasOnInit } from '../interfaces/oninit';
-import { Constructor } from '../decorators';
+import { Constructable } from '../decorators';
 import { NoProviderException } from '../errors/no-provider-exception';
 
 export class Container {
@@ -16,7 +16,7 @@ export class Container {
    */
   public static register<T>(
     dependency: string | InjectionToken<T>,
-    provider?: Constructor<T> | T,
+    provider?: Constructable<T> | T,
     ...input: any[]
   ): void {
     const key = typeof dependency === 'string' ? dependency : dependency.name;
@@ -53,9 +53,9 @@ export class Container {
       }
       provider = this.resolveDependencies(dependency, input);
       this.registry.set(dependency.name, provider);
-    }
-    if (hasOnInit(provider)) {
-      provider.onInit();
+      if (hasOnInit(provider)) {
+        provider.onInit();
+      }
     }
     return provider;
   }

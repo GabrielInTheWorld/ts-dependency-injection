@@ -1,4 +1,4 @@
-export interface Constructor<T> {
+export interface Constructable<T> {
   new (...args: any[]): T;
   prototype: any;
   name: string;
@@ -9,9 +9,9 @@ export interface InjectionValue<T> {
   afterInit?: (provider: T) => void;
 }
 
-export type InjectionToken<T> = Constructor<T> | InjectionValue<T>;
+export type InjectionToken<T> = Constructable<T> | InjectionValue<T>;
 
-export function isConstructable<T>(toCheck: any): toCheck is Constructor<T> {
+export function isConstructable<T>(toCheck: any): toCheck is Constructable<T> {
   return !!toCheck && !!toCheck.prototype;
 }
 
